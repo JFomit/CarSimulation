@@ -49,11 +49,24 @@ namespace CarSimulation
         /// Redraws this sprite in a current SpriteBatch
         /// </summary>
         /// <param name="spriteBatch">current <c>SpriteBatch</c> to draw the sprite in</param>
+        /// <param name="color">a color mask</param>
         public void Redraw(SpriteBatch spriteBatch, Color color)
         {
+            Redraw(spriteBatch, color, Vector2.Zero);
+        }
+        /// <summary>
+        /// Redraws this sprite in a current SpriteBatch
+        /// </summary>
+        /// <param name="spriteBatch">current <c>SpriteBatch</c> to draw the sprite in</param>
+        /// <param name="color">a color mask</param>
+        public void Redraw(SpriteBatch spriteBatch, Color color, Vector2 scroll)
+        {
+            Rectangle collider = Collider;
+            collider.Location = (collider.Location.ToVector2() + scroll).ToPoint();
+
             spriteBatch.Draw(
                 texture: Texture,
-                position: Position,
+                position: Position + scroll,
                 sourceRectangle: null,
                 color: color,
                 rotation: RotationRadians,
@@ -61,8 +74,8 @@ namespace CarSimulation
                 scale: 1f,
                 effects: SpriteEffects.None,
                 layerDepth: 0);
-            //drawing collider of the agent
-            spriteBatch.DrawRectangle(Collider, Color.Blue);
+            //drawing collider of the sprite
+            spriteBatch.DrawRectangle(collider, Color.Blue);
         }
         /// <summary>
         /// Checks weather or not this sprite collides with other
