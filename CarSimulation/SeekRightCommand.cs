@@ -23,7 +23,7 @@ namespace CarSimulation
             IntervalCounts = intervalsCount;
         }
 
-        public int Execute(Agent thisAgent)
+        public int Execute(Car thisAgent)
         {
             float Range = thisAgent.Raycast(thisAgent.Rotation + 90f, DetectionRange, thisAgent.Map);
 

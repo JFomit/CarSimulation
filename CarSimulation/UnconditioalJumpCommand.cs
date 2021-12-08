@@ -16,7 +16,7 @@ namespace CarSimulation
             Skip = skip;
         }
 
-        public int Execute(Agent thisAgent)
+        public int Execute(Car thisAgent)
         {
             //going to next + skipping
             return Skip + 1;

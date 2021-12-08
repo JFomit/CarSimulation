@@ -16,7 +16,7 @@ namespace CarSimulation
             RotationSpeed = rotationSpeed;
         }
 
-        public int Execute(Agent thisAgent)
+        public int Execute(Car thisAgent)
         {
             thisAgent.Rotate(RotationSpeed);
             //going to next command

@@ -15,6 +15,6 @@ namespace CarSimulation
         /// </summary>
         /// <param name="thisAgent"><c>agent</c>, which command will be executed</param>
         /// <returns>Amount to increment commands pointer after execution</returns>
-        public int Execute(Agent thisAgent);
+        public int Execute(Car thisAgent);
     }
 }

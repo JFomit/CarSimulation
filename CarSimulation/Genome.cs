@@ -24,7 +24,7 @@ namespace CarSimulation
         /// Decodes and executes next command in the <c>Commands</c> list
         /// </summary>
         /// <param name="thisAgent">genome holder</param>
-        public void Next(Agent thisAgent)
+        public void Next(Car thisAgent)
         {
             int inc = Commands[Pointer].Execute(thisAgent);
 

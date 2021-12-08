@@ -9,7 +9,7 @@ namespace CarSimulation
         private readonly ICommand[] commands;
         private readonly float MutationChance;
         private readonly int HighestCommandID;
-        private Random rnd;
+        private readonly Random rnd;
         /// <summary>
         /// 
         /// </summary>
@@ -20,27 +20,31 @@ namespace CarSimulation
         {
             MutationChance = mutationChance;
             HighestCommandID = highestCommandID;
-            commands = oldGenome.Commands;
+            commands = new ICommand[oldGenome.Commands.Length];
+            oldGenome.Commands.CopyTo(commands, 0);
             this.rnd = rnd;
         }
         public IBuilder BuildCommandsList()
         {
-            if (rnd.NextDouble() >= MutationChance)
+            if (rnd.NextDouble() <= MutationChance)
             {
-                int newCommand = rnd.Next(0, HighestCommandID);
-
-                commands[rnd.Next(0, commands.Length)] = newCommand switch
+                for (int i = 0; i < rnd.Next(0, 5 + 1); i++)
                 {
-                    MoveForwardCommand.opCode => new MoveForwardCommand(2f),
-                    MoveBackwardCommand.opCode => new MoveBackwardCommand(2f),
-                    RotateLeftCommand.opCode => new RotateLeftCommand(2f),
-                    RotateRightCommand.opCode => new RotateRightCommand(2f),
-                    SeekForwardCommand.opCode => new SeekForwardCommand(150, 2),
-                    SeekBackwardCommand.opCode => new SeekBackwardCommand(150, 2),
-                    SeekLeftCommand.opCode => new SeekLeftCommand(150, 2),
-                    SeekRightCommand.opCode => new SeekRightCommand(150, 2),
-                    _ => new UnconditioalJumpCommand(newCommand),
-                };
+                    int newCommand = rnd.Next(0, HighestCommandID);
+
+                    commands[rnd.Next(0, commands.Length)] = newCommand switch
+                    {
+                        MoveForwardCommand.opCode => new MoveForwardCommand(2f),
+                        MoveBackwardCommand.opCode => new MoveBackwardCommand(2f),
+                        RotateLeftCommand.opCode => new RotateLeftCommand(2f),
+                        RotateRightCommand.opCode => new RotateRightCommand(2f),
+                        SeekForwardCommand.opCode => new SeekForwardCommand(150, 2),
+                        SeekBackwardCommand.opCode => new SeekBackwardCommand(150, 2),
+                        SeekLeftCommand.opCode => new SeekLeftCommand(150, 2),
+                        SeekRightCommand.opCode => new SeekRightCommand(150, 2),
+                        _ => new UnconditioalJumpCommand(newCommand),
+                    };
+                }
             }
             return this;
         }

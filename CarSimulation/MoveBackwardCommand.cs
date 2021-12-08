@@ -16,9 +16,14 @@ namespace CarSimulation
             MoveSpeed = moveSpeed;
         }
 
-        public int Execute(Agent thisAgent)
+        public int Execute(Car thisAgent)
         {
-            thisAgent.Move(-MoveSpeed);
+            float motion = -MoveSpeed;
+            if (thisAgent.IsPunished)
+            {
+                motion *= thisAgent.PunismentSpeedModifier;
+            }
+            thisAgent.Move(motion);
             //going to next command
             return 1;
         }

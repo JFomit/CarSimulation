@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework.Input;
 using MonoGame;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using TextCopy;
 
@@ -23,7 +24,7 @@ namespace CarSimulation
         private SpriteBatch _spriteBatch;
 
         private List<Car> cars;
-        private Sprite[] collidable;
+        private List<Sprite> collidable;
         private SpriteFont font;
 
         private string debugString;
@@ -31,6 +32,8 @@ namespace CarSimulation
         private bool pause = false;
         private Vector2 scroll = Vector2.Zero;
         private const float moveSpeed = 10f;
+        private string csvPath;
+        private int genCount = 0;
 
         private Texture2D carTexture;
         private Texture2D wallTexture;
@@ -46,8 +49,11 @@ namespace CarSimulation
 
         protected override void Initialize()
         {
-            // TODO: Add your initialization logic here
-
+            csvPath = @"data.csv";
+            using (StreamWriter stream = new StreamWriter(csvPath, append: false, System.Text.Encoding.UTF8))
+            {
+                stream.WriteLine("genCounts;HighestPos;Counter");
+            }
             base.Initialize();
         }
 
@@ -96,7 +102,7 @@ namespace CarSimulation
                     case Keys.A:
                     case Keys.Left: /*scroll.X += moveSpeed;*/ break;
                     case Keys.D:
-                    case Keys.Right: /*scroll.X -= moveSpeed;*/ break;
+                    case Keys.Right: scroll.X -= moveSpeed; break;
                     default:
                         break;
                 }
@@ -104,21 +110,44 @@ namespace CarSimulation
 
             if (!pause)
             {
-                scroll.X -= 0.5f;
+                scroll.X -= 0.2f;
                 foreach (var item in cars)
                 {
-                    if (item.Collide(collidable) || item.Position.X < MathF.Abs(scroll.X + 32))
+                    if (item.Position.X < MathF.Abs(scroll.X + 32))
                     {
                         deleted.Add(item);
+                    }
+                    if (item.Collide(collidable.ToArray()))
+                    {
+                        item.Punish();
+                    }
+                    //off bounds check
+                    if (item.Position.Y <= -32 || item.Position.Y >= Window.ClientBounds.Height + 32)
+                    {
+                        item.Punish();
                     }
                     item.Think();
                 }
                 counter++;
+                if (counter % 200 == 0)
+                {
+                    collidable.Add(new Sprite(wallTexture, new Vector2(cars.OrderBy(t => t.Position.X).LastOrDefault().Position.X + Window.ClientBounds.Width, new Random().Next(0, 500)), 0f));
+                }
+                #region Removing "dead weight"
+                Car loser = cars.OrderBy(t => t.Position.X).FirstOrDefault();
+
+                collidable = collidable.Where(t => t.Position.X >= loser.Position.X - 32).ToList();
+                #endregion
             }
             for (int i = 0; i < deleted.Count; i++)
             {
                 Car item = deleted[i];
                 cars.Remove(item);
+                if (cars.Count <= 5)
+                {
+                    deleted.Clear();
+                    break;
+                }
             }
 
             int objectsCount = 0;
@@ -145,7 +174,7 @@ namespace CarSimulation
                 {
                     ClipboardService.SetText($"{{{data}}}");
                 }
-                color = currentCar.Collide(collidable) ? Color.Turquoise : Color.CornflowerBlue;
+                color = currentCar.Collide(collidable.ToArray()) ? Color.Turquoise : Color.CornflowerBlue;
             }
             else
             {
@@ -155,9 +184,13 @@ namespace CarSimulation
 
             if (cars.Count <= 5)
             {
+                using (StreamWriter stream = new StreamWriter(csvPath, append: true, System.Text.Encoding.UTF8))
+                {
+                    stream.WriteLine($"{genCount};{cars.Max(t => t.Position.X)};{counter}");
+                }
                 RestartSim();
+                genCount++;
             }
-
             base.Update(gameTime);
         }
 
@@ -169,10 +202,10 @@ namespace CarSimulation
             foreach (var car in cars)
             {
                 Vector4 distances = new Vector4(
-                   car.Raycast(car.Rotation + 0, 150, collidable),
-                   car.Raycast(car.Rotation + 90, 150, collidable),
-                   car.Raycast(car.Rotation + 180, 150, collidable),
-                   car.Raycast(car.Rotation + 270, 150, collidable));
+                   car.Raycast(car.Rotation + 0, 150, collidable.ToArray()),
+                   car.Raycast(car.Rotation + 90, 150, collidable.ToArray()),
+                   car.Raycast(car.Rotation + 180, 150, collidable.ToArray()),
+                   car.Raycast(car.Rotation + 270, 150, collidable.ToArray()));
 
                 car.Redraw(_spriteBatch, Color.White, scroll);
                 _spriteBatch.DrawLine(car.Position + scroll, distances.X, car.RotationRadians, Color.Red);
@@ -199,10 +232,10 @@ namespace CarSimulation
         /// Creates random pos vectors
         /// </summary>
         /// <param name="rnd"><c>Random</c> class instance</param>
-        /// <returns><c>Vector2</c> with random componets: [0-500)</returns>
+        /// <returns><c>Vector2</c> with random componets: [100-600) and [0-500)</returns>
         private Vector2 CreateRandomPos(Random rnd)
         {
-            return new Vector2(rnd.Next(0, 500), rnd.Next(0, 500));
+            return new Vector2(rnd.Next(100, 600), rnd.Next(0, 500));
         }
 
         private void StartSim()
@@ -212,7 +245,7 @@ namespace CarSimulation
             cars = new List<Car>(20);
             for (int i = 0; i < cars.Capacity; i++)
             {
-                int[] comms = new int[10];
+                int[] comms = new int[20];
 
                 for (int j = 0; j < comms.Length; j++)
                 {
@@ -222,7 +255,7 @@ namespace CarSimulation
                 InitionalGenomeBuilder initionalGenomeBuilder = new InitionalGenomeBuilder(comms);
                 GenomeCreator genomeCreator = new GenomeCreator(initionalGenomeBuilder);
 
-                cars.Add(new Car(carTexture, CreateRandomPos(rnd), 0f, collidable, genomeCreator.CreateGenome()));
+                cars.Add(new Car(carTexture, new Vector2(32, rnd.Next(0, 500)), 0f, collidable.ToArray(), genomeCreator.CreateGenome(), 0.1f, 120));
             }
         }
 
@@ -232,10 +265,10 @@ namespace CarSimulation
             counter = 0;
             Random rnd = new Random();
 
-            collidable = new Sprite[20];
-            for (int i = 0; i < collidable.Length; i++)
+            collidable = new List<Sprite>();
+            for (int i = 0; i < 20; i++)
             {
-                collidable[i] = new Sprite(wallTexture, CreateRandomPos(rnd), 0f);
+                collidable.Add(new Sprite(wallTexture, CreateRandomPos(rnd), 0f));
             }
 
             return rnd;
@@ -251,9 +284,9 @@ namespace CarSimulation
             while (cars.Count < 20)
             {
                 Car donor = genomeDonors[rnd.Next(0, genomeDonors.Count)];
-                IBuilder builder = new GeneticAlgorithGenomeBuilder(donor.Genome, 1f, 8, rnd);
+                IBuilder builder = new GeneticAlgorithGenomeBuilder(donor.Genome, 0.75f, 8, rnd);
                 GenomeCreator genomeCreator = new GenomeCreator(builder);
-                cars.Add(new Car(carTexture, CreateRandomPos(rnd), 0f, collidable, genomeCreator.CreateGenome()));
+                cars.Add(new Car(carTexture, new Vector2(32, rnd.Next(0, 500)), 0f, collidable.ToArray(), genomeCreator.CreateGenome(), 0.1f, 120));
             }
         }
     }
