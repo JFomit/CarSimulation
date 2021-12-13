@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using TextCopy;
+using System.Text.Json;
 
 namespace CarSimulation
 {
@@ -32,13 +33,13 @@ namespace CarSimulation
         private bool pause = false;
         private Vector2 scroll = Vector2.Zero;
         private const float moveSpeed = 10f;
-        private string csvPath;
         private int genCount = 0;
 
         private Texture2D carTexture;
         private Texture2D wallTexture;
 
         Color color = Color.CornflowerBlue;
+        Consts consts;
 
         public Game1()
         {
@@ -49,8 +50,9 @@ namespace CarSimulation
 
         protected override void Initialize()
         {
-            csvPath = @"data.csv";
-            using (StreamWriter stream = new StreamWriter(csvPath, append: false, System.Text.Encoding.UTF8))
+            string jsonString = File.ReadAllText(@"config.json");
+            consts = JsonSerializer.Deserialize<Consts>(jsonString);
+            using (StreamWriter stream = new StreamWriter(consts.CsvPath, append: false, System.Text.Encoding.UTF8))
             {
                 stream.WriteLine("genCounts;HighestPos;Counter");
             }
@@ -66,13 +68,14 @@ namespace CarSimulation
             font = Content.Load<SpriteFont>(@"File");
 
             StartSim();
+            base.LoadContent();
         }
 
         protected override void Update(GameTime gameTime)
         {
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
-            
+
             KeyboardState keyboardState = Keyboard.GetState();
             Vector2 mousePos = Mouse.GetState(Window).Position.ToVector2();
 
@@ -99,8 +102,6 @@ namespace CarSimulation
                     case Keys.Up: scroll.Y += moveSpeed; break;
                     case Keys.S:
                     case Keys.Down: scroll.Y -= moveSpeed; break;
-                    case Keys.A:
-                    case Keys.Left: /*scroll.X += moveSpeed;*/ break;
                     case Keys.D:
                     case Keys.Right: scroll.X -= moveSpeed; break;
                     default:
@@ -110,7 +111,7 @@ namespace CarSimulation
 
             if (!pause)
             {
-                scroll.X -= 0.2f;
+                scroll.X -= consts.DeathSideSpeed;
                 foreach (var item in cars)
                 {
                     if (item.Position.X < MathF.Abs(scroll.X + 32))
@@ -129,7 +130,7 @@ namespace CarSimulation
                     item.Think();
                 }
                 counter++;
-                if (counter % 200 == 0)
+                if (counter % consts.ObstaclesGenerationInterval == 0)
                 {
                     collidable.Add(new Sprite(wallTexture, new Vector2(cars.OrderBy(t => t.Position.X).LastOrDefault().Position.X + Window.ClientBounds.Width, new Random().Next(0, 500)), 0f));
                 }
@@ -182,15 +183,24 @@ namespace CarSimulation
             }
             #endregion
 
-            if (cars.Count <= 5)
+            if (cars.Count <= consts.NextGenerationSwitch)
             {
-                using (StreamWriter stream = new StreamWriter(csvPath, append: true, System.Text.Encoding.UTF8))
+                using (StreamWriter stream = new StreamWriter(consts.CsvPath, append: true, System.Text.Encoding.UTF8))
                 {
                     stream.WriteLine($"{genCount};{cars.Max(t => t.Position.X)};{counter}");
                 }
                 RestartSim();
                 genCount++;
             }
+
+            if (consts.MaxGenerationAmount >= 0)
+            {
+                if (genCount >= consts.MaxGenerationAmount)
+                {
+                    Exit();
+                }
+            }
+
             base.Update(gameTime);
         }
 
@@ -242,10 +252,10 @@ namespace CarSimulation
         {
             Random rnd = GenerateObstaclesAndReturnGenRnd();
             // cool {0,6,1,7,5,1,0,1,2,5}
-            cars = new List<Car>(20);
+            cars = new List<Car>(consts.PopulationSize);
             for (int i = 0; i < cars.Capacity; i++)
             {
-                int[] comms = new int[20];
+                int[] comms = new int[consts.PopulationSize];
 
                 for (int j = 0; j < comms.Length; j++)
                 {
@@ -255,7 +265,7 @@ namespace CarSimulation
                 InitionalGenomeBuilder initionalGenomeBuilder = new InitionalGenomeBuilder(comms);
                 GenomeCreator genomeCreator = new GenomeCreator(initionalGenomeBuilder);
 
-                cars.Add(new Car(carTexture, new Vector2(32, rnd.Next(0, 500)), 0f, collidable.ToArray(), genomeCreator.CreateGenome(), 0.1f, 120));
+                cars.Add(new Car(carTexture, new Vector2(32, rnd.Next(0, 500)), 0f, collidable.ToArray(), genomeCreator.CreateGenome(), consts.SlownessPercent, consts.PunishmentTime));
             }
         }
 
@@ -266,7 +276,7 @@ namespace CarSimulation
             Random rnd = new Random();
 
             collidable = new List<Sprite>();
-            for (int i = 0; i < 20; i++)
+            for (int i = 0; i < consts.StartingObstaclesAmount; i++)
             {
                 collidable.Add(new Sprite(wallTexture, CreateRandomPos(rnd), 0f));
             }
@@ -281,12 +291,12 @@ namespace CarSimulation
             List<Car> genomeDonors = new List<Car>();
             genomeDonors.AddRange(cars);
             cars.Clear();
-            while (cars.Count < 20)
+            while (cars.Count < consts.PopulationSize)
             {
                 Car donor = genomeDonors[rnd.Next(0, genomeDonors.Count)];
-                IBuilder builder = new GeneticAlgorithGenomeBuilder(donor.Genome, 0.75f, 8, rnd);
+                IBuilder builder = new GeneticAlgorithGenomeBuilder(donor.Genome, consts.MutationChance, 8, rnd);
                 GenomeCreator genomeCreator = new GenomeCreator(builder);
-                cars.Add(new Car(carTexture, new Vector2(32, rnd.Next(0, 500)), 0f, collidable.ToArray(), genomeCreator.CreateGenome(), 0.1f, 120));
+                cars.Add(new Car(carTexture, new Vector2(32, rnd.Next(0, 500)), 0f, collidable.ToArray(), genomeCreator.CreateGenome(), consts.SlownessPercent, consts.PunishmentTime));
             }
         }
     }
