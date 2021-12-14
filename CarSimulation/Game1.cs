@@ -144,7 +144,7 @@ namespace CarSimulation
             {
                 Car item = deleted[i];
                 cars.Remove(item);
-                if (cars.Count <= 5)
+                if (cars.Count <= consts.NextGenerationSwitch)
                 {
                     deleted.Clear();
                     break;
@@ -208,22 +208,35 @@ namespace CarSimulation
         {
             GraphicsDevice.Clear(color);
             _spriteBatch.Begin();
-            #region drawing debug lines
-            foreach (var car in cars)
-            {
-                Vector4 distances = new Vector4(
-                   car.Raycast(car.Rotation + 0, 150, collidable.ToArray()),
-                   car.Raycast(car.Rotation + 90, 150, collidable.ToArray()),
-                   car.Raycast(car.Rotation + 180, 150, collidable.ToArray()),
-                   car.Raycast(car.Rotation + 270, 150, collidable.ToArray()));
 
-                car.Redraw(_spriteBatch, Color.White, scroll);
-                _spriteBatch.DrawLine(car.Position + scroll, distances.X, car.RotationRadians, Color.Red);
-                _spriteBatch.DrawLine(car.Position + scroll, distances.Y, car.RotationRadians + MathF.PI / 2, Color.Red);
-                _spriteBatch.DrawLine(car.Position + scroll , distances.Z, car.RotationRadians + MathF.PI, Color.Red);
-                _spriteBatch.DrawLine(car.Position + scroll, distances.W, car.RotationRadians + 3 * MathF.PI / 2, Color.Red);
+            #region drawing debug lines if needed
+            if (consts.DrawDebugLines)
+            {
+                foreach (var car in cars)
+                {
+                    float[] distances = new float[8];
+                    for (int i = 0; i < 8; i++)
+                    {
+                        distances[i] = car.Raycast(car.Rotation + (i * 45), 150, collidable.ToArray());
+                    }
+
+                    car.Redraw(_spriteBatch, Color.White, scroll);
+                    for (int i = 0; i < 8; i++)
+                    {
+                        Color color = distances[i] <= 75f ? Color.Orange : Color.Red;
+                        _spriteBatch.DrawLine(car.Position + scroll, distances[i], car.RotationRadians + MathHelper.ToRadians(i * 45f), color);
+                    }
+                }
+            }
+            else
+            {
+                foreach (var car in cars)
+                {
+                    car.Redraw(_spriteBatch, Color.White, scroll);
+                }
             }
             #endregion
+
             foreach (var item in collidable)
             {
                 item.Redraw(_spriteBatch, Color.White, scroll);
@@ -259,7 +272,7 @@ namespace CarSimulation
 
                 for (int j = 0; j < comms.Length; j++)
                 {
-                    comms[j] = rnd.Next(0, 8);
+                    comms[j] = rnd.Next(0, 12);
                 }
 
                 InitionalGenomeBuilder initionalGenomeBuilder = new InitionalGenomeBuilder(comms);
@@ -294,7 +307,7 @@ namespace CarSimulation
             while (cars.Count < consts.PopulationSize)
             {
                 Car donor = genomeDonors[rnd.Next(0, genomeDonors.Count)];
-                IBuilder builder = new GeneticAlgorithGenomeBuilder(donor.Genome, consts.MutationChance, 8, rnd);
+                IBuilder builder = new GeneticAlgorithGenomeBuilder(donor.Genome, consts.MutationChance, 12, rnd);
                 GenomeCreator genomeCreator = new GenomeCreator(builder);
                 cars.Add(new Car(carTexture, new Vector2(32, rnd.Next(0, 500)), 0f, collidable.ToArray(), genomeCreator.CreateGenome(), consts.SlownessPercent, consts.PunishmentTime));
             }

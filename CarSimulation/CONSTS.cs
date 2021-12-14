@@ -47,14 +47,9 @@ namespace CarSimulation
         /// Determines how many generations will program do, befoure it closes. Set to <c>-1</c>, if you want to remove the limit entirely
         /// </summary>
         public int MaxGenerationAmount { get; set; }
-        //data.csv
-        //5
-        //20
-        //0.1f
-        //120
-        //20
-        //200
-        //0.02f
-        //-1
+        /// <summary>
+        /// Determines weather or not should debug lines be drawn
+        /// </summary>
+        public bool DrawDebugLines { get; set; }
     }
 }

@@ -19,18 +19,7 @@ namespace CarSimulation
         {
             for (int i = 0; i < OperationsCodes.Length; i++)
             {
-                commands[i] = OperationsCodes[i] switch
-                {
-                    MoveForwardCommand.opCode => new MoveForwardCommand(2f),
-                    MoveBackwardCommand.opCode => new MoveBackwardCommand(2f),
-                    RotateLeftCommand.opCode => new RotateLeftCommand(2f),
-                    RotateRightCommand.opCode => new RotateRightCommand(2f),
-                    SeekForwardCommand.opCode => new SeekForwardCommand(150, 2),
-                    SeekBackwardCommand.opCode => new SeekBackwardCommand(150, 2),
-                    SeekLeftCommand.opCode => new SeekLeftCommand(150, 2),
-                    SeekRightCommand.opCode => new SeekRightCommand(150, 2),
-                    _ => new UnconditioalJumpCommand(OperationsCodes[i]),
-                };
+                commands[i] = GenomeCreator.GetCommandFromOpCode(OperationsCodes[i], 2f, 2f, 150, 2);
             }
             return this;
         }

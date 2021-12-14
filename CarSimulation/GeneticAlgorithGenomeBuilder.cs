@@ -28,22 +28,11 @@ namespace CarSimulation
         {
             if (rnd.NextDouble() <= MutationChance)
             {
-                for (int i = 0; i < rnd.Next(0, 5 + 1); i++)
+                for (int i = 0; i < rnd.Next(1, 6); i++)
                 {
                     int newCommand = rnd.Next(0, HighestCommandID);
 
-                    commands[rnd.Next(0, commands.Length)] = newCommand switch
-                    {
-                        MoveForwardCommand.opCode => new MoveForwardCommand(2f),
-                        MoveBackwardCommand.opCode => new MoveBackwardCommand(2f),
-                        RotateLeftCommand.opCode => new RotateLeftCommand(2f),
-                        RotateRightCommand.opCode => new RotateRightCommand(2f),
-                        SeekForwardCommand.opCode => new SeekForwardCommand(150, 2),
-                        SeekBackwardCommand.opCode => new SeekBackwardCommand(150, 2),
-                        SeekLeftCommand.opCode => new SeekLeftCommand(150, 2),
-                        SeekRightCommand.opCode => new SeekRightCommand(150, 2),
-                        _ => new UnconditioalJumpCommand(newCommand),
-                    };
+                    commands[rnd.Next(0, commands.Length)] = GenomeCreator.GetCommandFromOpCode(newCommand, 2f, 2f, 150, 2);
                 }
             }
             return this;
