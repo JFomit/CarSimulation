@@ -50,6 +50,14 @@ namespace CarSimulation
         /// <summary>
         /// Determines weather or not should debug lines be drawn
         /// </summary>
-        public bool DrawDebugLines { get; set; }
+        public bool AlwaysDrawDebugLines { get; set; }
+        /// <summary>
+        /// Highest command id. Exlusive
+        /// </summary>
+        public int HighestCommandID { get; set; }
+        /// <summary>
+        /// Amount of commands each agent will have
+        /// </summary>
+        public int CommandsCount { get; set; }
     }
 }

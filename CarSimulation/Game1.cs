@@ -34,12 +34,14 @@ namespace CarSimulation
         private Vector2 scroll = Vector2.Zero;
         private const float moveSpeed = 10f;
         private int genCount = 0;
+        private Car currentCar;
 
         private Texture2D carTexture;
         private Texture2D wallTexture;
 
         Color color = Color.CornflowerBlue;
         Consts consts;
+
 
         public Game1()
         {
@@ -90,7 +92,7 @@ namespace CarSimulation
             tickCounter++;
 
             #region Main loop
-            Car currentCar = null;
+            currentCar = null;
             objectsInfo = string.Empty;
             List<Car> deleted = new List<Car>();
 
@@ -210,7 +212,7 @@ namespace CarSimulation
             _spriteBatch.Begin();
 
             #region drawing debug lines if needed
-            if (consts.DrawDebugLines)
+            if (consts.AlwaysDrawDebugLines)
             {
                 foreach (var car in cars)
                 {
@@ -232,6 +234,20 @@ namespace CarSimulation
             {
                 foreach (var car in cars)
                 {
+                    if (car == currentCar)
+                    {
+                        float[] distances = new float[8];
+                        for (int i = 0; i < 8; i++)
+                        {
+                            distances[i] = car.Raycast(car.Rotation + (i * 45), 150, collidable.ToArray());
+                        }
+
+                        for (int i = 0; i < 8; i++)
+                        {
+                            Color color = distances[i] <= 75f ? Color.Orange : Color.Red;
+                            _spriteBatch.DrawLine(car.Position + scroll, distances[i], car.RotationRadians + MathHelper.ToRadians(i * 45f), color);
+                        }
+                    }
                     car.Redraw(_spriteBatch, Color.White, scroll);
                 }
             }
@@ -242,7 +258,7 @@ namespace CarSimulation
                 item.Redraw(_spriteBatch, Color.White, scroll);
             }
 
-            string scrollString = $"scroll = ({scroll.X},{scroll.Y})";
+            string scrollString = $"scroll = ({MathF.Round(scroll.X, 0)},{MathF.Round(scroll.Y, 2)})";
 
             _spriteBatch.DrawString(font, debugString, Vector2.One, Color.Black);
             _spriteBatch.DrawString(font, scrollString, new Vector2(Window.ClientBounds.Width - font.MeasureString(scrollString).X, 1), Color.Black);
@@ -268,11 +284,11 @@ namespace CarSimulation
             cars = new List<Car>(consts.PopulationSize);
             for (int i = 0; i < cars.Capacity; i++)
             {
-                int[] comms = new int[consts.PopulationSize];
+                int[] comms = new int[consts.CommandsCount];
 
                 for (int j = 0; j < comms.Length; j++)
                 {
-                    comms[j] = rnd.Next(0, 12);
+                    comms[j] = rnd.Next(0, consts.HighestCommandID);
                 }
 
                 InitionalGenomeBuilder initionalGenomeBuilder = new InitionalGenomeBuilder(comms);
@@ -306,8 +322,8 @@ namespace CarSimulation
             cars.Clear();
             while (cars.Count < consts.PopulationSize)
             {
-                Car donor = genomeDonors[rnd.Next(0, genomeDonors.Count)];
-                IBuilder builder = new GeneticAlgorithGenomeBuilder(donor.Genome, consts.MutationChance, 12, rnd);
+                (Car, Car) donor = (genomeDonors[rnd.Next(0, genomeDonors.Count)], genomeDonors[rnd.Next(0, genomeDonors.Count)]);
+                IBuilder builder = new GeneticAlgorithGenomeBuilder(donor.Item1.Genome, donor.Item2.Genome, consts.MutationChance, consts.HighestCommandID, rnd);
                 GenomeCreator genomeCreator = new GenomeCreator(builder);
                 cars.Add(new Car(carTexture, new Vector2(32, rnd.Next(0, 500)), 0f, collidable.ToArray(), genomeCreator.CreateGenome(), consts.SlownessPercent, consts.PunishmentTime));
             }

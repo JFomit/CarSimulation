@@ -26,12 +26,12 @@ namespace CarSimulation
         public float PunismentSpeedModifier { get; private set; }
         public Genome Genome { get; private set; }
 
-        public Car(Texture2D texture, Vector2 position, float rotation, Sprite[] map, Genome genome, float modiier, int maxPunishmentTime) : base(texture, position, rotation, map)
+        public Car(Texture2D texture, Vector2 position, float rotation, Sprite[] map, Genome genome, float modifier, int maxPunishmentTime) : base(texture, position, rotation, map)
         {
             Genome = genome;
             MaxPunishmentsTurn = maxPunishmentTime;
             IsPunished = false;
-            PunismentSpeedModifier = modiier;
+            PunismentSpeedModifier = modifier;
         }
         /// <summary>
         /// Makes this Car do its turn

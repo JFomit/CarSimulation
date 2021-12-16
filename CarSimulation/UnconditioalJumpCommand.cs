@@ -7,7 +7,7 @@ namespace CarSimulation
     class UnconditioalJumpCommand : ICommand
     {
         public int OpCode { get => opCode; }
-        public const int opCode = 8;
+        public const int opCode = 12;
 
         private readonly int Skip;
 

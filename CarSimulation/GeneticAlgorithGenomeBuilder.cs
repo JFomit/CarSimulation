@@ -16,10 +16,23 @@ namespace CarSimulation
         /// <param name="oldGenome">old genome</param>
         /// <param name="mutationChance">chance of the mutation for this new genome (<c>0f</c> to <c>1f</c>)</param>
         /// <param name="highestCommandID">highest command id. Exclusive</param>
-        public GeneticAlgorithGenomeBuilder(Genome oldGenome, float mutationChance, int highestCommandID, Random rnd)
+        public GeneticAlgorithGenomeBuilder(Genome oldGenome1, Genome oldGenome2, float mutationChance, int highestCommandID, Random rnd)
         {
             MutationChance = mutationChance;
             HighestCommandID = highestCommandID;
+            //crossing
+            Genome oldGenome = new Genome(oldGenome1.Commands);
+            for (int i = 0; i < oldGenome.Commands.Length; i++)
+            {
+                if (i % 2 == 0)
+                {
+                    oldGenome.Commands[i] = oldGenome1.Commands[i];
+                }
+                else
+                {
+                    oldGenome.Commands[i] = oldGenome2.Commands[i];
+                }
+            }
             commands = new ICommand[oldGenome.Commands.Length];
             oldGenome.Commands.CopyTo(commands, 0);
             this.rnd = rnd;
